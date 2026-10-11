@@ -2,7 +2,7 @@
 
 Replay recorded file edits from local Codex history, view a saved Replay Theater JSON record, or export a standalone HTML replay. This free edition includes one self-contained skill, Python scripts, schemas and the local browser viewer. It has no MCP connection or lifecycle hooks.
 
-Published by **Feida Wang**. Source: [FeidaWang/Reply-Theatre](https://github.com/FeidaWang/Reply-Theatre). Help and issue-reporting instructions are in [SUPPORT.md](SUPPORT.md).
+Published by **Feida Wang**. Source: [FeidaWang/Reply-Theatre](https://github.com/FeidaWang/Reply-Theatre). Help and issue-reporting instructions are in [SUPPORT.md](SUPPORT.md). Read the [privacy policy](PRIVACY.md) and [terms of use](TERMS.md).
 
 ## What you need
 
