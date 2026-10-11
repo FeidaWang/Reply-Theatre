@@ -28,13 +28,13 @@ Native history can omit Shell, formatter, MCP and subagent edits. Proposed or fa
 
 The complete local plugin, with optional reviewed capture hooks and MCP inspection, is a separate distribution. This package does not replace it or change its installation, configuration or data. Do not install two plugins with the same identity into the same managed source as an upgrade unless you intend to switch editions.
 
-This ZIP is a locally validated preparation package. Public submission still requires the real listing pages and publisher verification described in `OPENAI-PREPARATION.md`; it has not been uploaded, approved or published.
+This ZIP is a locally validated preparation package with published product, support, privacy and terms pages. OpenAI submission still requires publisher verification and the applicable portal checks described in `OPENAI-PREPARATION.md`; it has not been uploaded to OpenAI, approved or published in the OpenAI directory.
 
 MIT licence. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.
 
 ## Download and install
 
-The [OpenAI Skills-only ZIP](downloads/replay-theater-openai-skills-0.4.2.zip) contains a single `replay-theater/` directory. It is a preparation package, not an OpenAI-approved directory release.
+The [OpenAI Skills-only ZIP](downloads/replay-theater-openai-skills-0.4.3.zip) contains a single `replay-theater/` directory. It is a preparation package, not an OpenAI-approved directory release.
 
 For a standalone local skill, clone this repository and copy the complete `skills/replay` folder to your local skills directory. Keep the scripts, web assets, schemas, examples and references together. For example, from the repository root:
 

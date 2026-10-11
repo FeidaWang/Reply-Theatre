@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "replay-theater",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Replay local Codex native file edits, view saved records and export an offline replay using a self-contained skill.",
   "author": {
     "name": "Feida Wang",
@@ -34,11 +34,13 @@
           "./assets/screenshot.png"
         ],
         "websiteURL": "https://github.com/FeidaWang/Reply-Theatre",
-        "supportURL": "https://github.com/FeidaWang/Reply-Theatre/blob/main/SUPPORT.md"
+        "supportURL": "https://github.com/FeidaWang/Reply-Theatre/blob/main/SUPPORT.md",
+        "privacyPolicyURL": "https://github.com/FeidaWang/Reply-Theatre/blob/main/PRIVACY.md",
+        "termsOfServiceURL": "https://raw.githubusercontent.com/FeidaWang/Reply-Theatre/main/TERMS.md"
       },
       "publication": {
         "countries": [],
-        "release_notes": "Skills-only local replay edition. Includes native history collection, saved-record viewing and offline HTML export. No MCP configuration, lifecycle hooks or automatic capture. The full local plugin remains separately available."
+        "release_notes": "Publish privacy policy and terms of use for the free local Skills-only edition, add all four verified listing links and bundle the documents. Replay functionality is unchanged; no MCP connection or hooks are included."
       }
     }
   },
