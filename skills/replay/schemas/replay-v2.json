@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:replay-theater:replay-v2",
+  "title": "Replay Theater native and observed edit snapshot v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "threadId",
+    "cwd",
+    "generatedAt",
+    "source",
+    "warnings",
+    "turns"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "threadId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cwd": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "engine",
+        "userAgent",
+        "modelRequests",
+        "pagesRead",
+        "truncated",
+        "skippedTurnId",
+        "capture"
+      ],
+      "properties": {
+        "type": {
+          "const": "codex-edit-replay"
+        },
+        "engine": {
+          "type": "string"
+        },
+        "userAgent": {
+          "type": "string"
+        },
+        "modelRequests": {
+          "const": 0
+        },
+        "pagesRead": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "skippedTurnId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "recordedCalls",
+            "pendingCalls",
+            "unpairedCalls"
+          ],
+          "properties": {
+            "recordedCalls": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pendingCalls": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unpairedCalls": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "turns": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/turn"
+      }
+    }
+  },
+  "$defs": {
+    "turn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "startedAt",
+        "completedAt",
+        "steps"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "interrupted",
+            "failed"
+          ]
+        },
+        "startedAt": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "completedAt": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "itemId",
+        "path",
+        "displayPath",
+        "kind",
+        "movePath",
+        "displayMovePath",
+        "status",
+        "applied",
+        "diff",
+        "lines",
+        "added",
+        "removed",
+        "provenance"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "itemId": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "displayPath": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "add",
+            "delete",
+            "update"
+          ]
+        },
+        "movePath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "displayMovePath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "failed",
+            "declined",
+            "inProgress"
+          ]
+        },
+        "applied": {
+          "type": "boolean"
+        },
+        "diff": {
+          "type": "string"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "added": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "removed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "native",
+                "snapshot"
+              ]
+            },
+            "toolName": {
+              "type": "string"
+            },
+            "toolStatus": {
+              "enum": [
+                "succeeded",
+                "failed",
+                "unknown",
+                "interrupted"
+              ]
+            },
+            "attribution": {
+              "enum": [
+                "window",
+                "overlap",
+                "unpaired"
+              ]
+            },
+            "mode": {
+              "enum": [
+                "hook",
+                "manual",
+                "test"
+              ]
+            },
+            "observedAt": {
+              "type": "number"
+            },
+            "beforeHash": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "afterHash": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "limited": {
+              "type": "boolean"
+            },
+            "ordering": {
+              "enum": [
+                "recorded",
+                "anchored",
+                "unresolved"
+              ]
+            },
+            "exitCode": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "toolStatusSource": {
+              "enum": [
+                "hook-response",
+                "native-transcript-completion"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "text",
+        "old",
+        "new"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "+",
+            "-",
+            " ",
+            "@",
+            "!",
+            "?"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "old": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "new": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

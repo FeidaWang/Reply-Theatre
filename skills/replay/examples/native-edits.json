@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "threadId": "synthetic-demo-chat",
+  "cwd": "/demo",
+  "generatedAt": "2026-10-11T04:00:00+00:00",
+  "source": {
+    "type": "codex-native-fileChange",
+    "engine": "synthetic-fixture",
+    "userAgent": "Replay Theater example",
+    "modelRequests": 0,
+    "pagesRead": 1,
+    "truncated": false,
+    "skippedTurnId": null
+  },
+  "warnings": [
+    "\u4ec5\u5305\u542b\u539f\u751f fileChange\uff1bShell\u3001\u683c\u5f0f\u5316\u5668\u3001MCP \u548c\u5b50\u4ee3\u7406\u7684\u6539\u52a8\u53ef\u80fd\u7f3a\u5931\u3002",
+    "diff \u662f\u5f53\u65f6\u7684\u8bb0\u5f55\uff1b\u672a\u8bfb\u53d6\u5f53\u524d\u6587\u4ef6\uff0c\u4e5f\u4e0d\u4ee3\u8868\u5b8c\u6574\u6587\u4ef6\u7248\u672c\u3002"
+  ],
+  "turns": [
+    {
+      "id": "demo-turn",
+      "status": "completed",
+      "startedAt": 1791691200,
+      "completedAt": 1791691220,
+      "steps": [
+        {
+          "id": "demo-turn:demo-create:0",
+          "itemId": "demo-create",
+          "path": "/demo/greeting.py",
+          "displayPath": "greeting.py",
+          "kind": "add",
+          "movePath": null,
+          "displayMovePath": null,
+          "status": "completed",
+          "applied": true,
+          "diff": "print(\"Hello\")\n",
+          "lines": [
+            {
+              "op": "+",
+              "text": "print(\"Hello\")",
+              "old": null,
+              "new": 1
+            }
+          ],
+          "added": 1,
+          "removed": 0
+        },
+        {
+          "id": "demo-turn:demo-update:0",
+          "itemId": "demo-update",
+          "path": "/demo/greeting.py",
+          "displayPath": "greeting.py",
+          "kind": "update",
+          "movePath": null,
+          "displayMovePath": null,
+          "status": "completed",
+          "applied": true,
+          "diff": "@@ -1 +1 @@\n-print(\"Hello\")\n+print(\"Hello, replay!\")\n",
+          "lines": [
+            {
+              "op": "@",
+              "text": "@@ -1 +1 @@",
+              "old": null,
+              "new": null
+            },
+            {
+              "op": "-",
+              "text": "print(\"Hello\")",
+              "old": 1,
+              "new": null
+            },
+            {
+              "op": "+",
+              "text": "print(\"Hello, replay!\")",
+              "old": null,
+              "new": 1
+            }
+          ],
+          "added": 1,
+          "removed": 1
+        },
+        {
+          "id": "demo-turn:demo-notes:0",
+          "itemId": "demo-notes",
+          "path": "/demo/notes.txt",
+          "displayPath": "notes.txt",
+          "kind": "add",
+          "movePath": null,
+          "displayMovePath": null,
+          "status": "completed",
+          "applied": true,
+          "diff": "A saved edit record.\n",
+          "lines": [
+            {
+              "op": "+",
+              "text": "A saved edit record.",
+              "old": null,
+              "new": 1
+            }
+          ],
+          "added": 1,
+          "removed": 0
+        },
+        {
+          "id": "demo-turn:demo-proposal:0",
+          "itemId": "demo-proposal",
+          "path": "/demo/greeting.py",
+          "displayPath": "greeting.py",
+          "kind": "update",
+          "movePath": null,
+          "displayMovePath": null,
+          "status": "failed",
+          "applied": false,
+          "diff": "@@ -1 +1 @@\n-print(\"Hello, replay!\")\n+print(\"Proposed, not confirmed\")\n",
+          "lines": [
+            {
+              "op": "@",
+              "text": "@@ -1 +1 @@",
+              "old": null,
+              "new": null
+            },
+            {
+              "op": "-",
+              "text": "print(\"Hello, replay!\")",
+              "old": 1,
+              "new": null
+            },
+            {
+              "op": "+",
+              "text": "print(\"Proposed, not confirmed\")",
+              "old": null,
+              "new": 1
+            }
+          ],
+          "added": 1,
+          "removed": 1
+        }
+      ]
+    }
+  ]
+}

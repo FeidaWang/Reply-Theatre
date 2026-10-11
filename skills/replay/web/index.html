@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Replay Theater · Codex</title>
+<link rel="stylesheet" href="style.css">
+<script src="icons.js" defer></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<main class="app-shell">
+  <header class="app-header">
+    <div class="brand"><svg class="brand-art" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 32 32"><defs><linearGradient id="brand-gradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2639b"/><stop offset="1" stop-color="#9b5de5"/></linearGradient><clipPath id="brand-film"><rect x="3" y="6" width="26" height="20" rx="4.5"/></clipPath></defs><rect class="glow" x="1" y="4" width="30" height="24" rx="6" fill="#e2639b" fill-opacity=".4"/><rect x="3" y="6" width="26" height="20" rx="4.5" fill="url(#brand-gradient)"/><g clip-path="url(#brand-film)" fill="#fff" fill-opacity=".55"><g class="roll"><rect x="3" y="7.5" width="2.6" height="2" rx=".6"/><rect x="8" y="7.5" width="2.6" height="2" rx=".6"/><rect x="13" y="7.5" width="2.6" height="2" rx=".6"/><rect x="18" y="7.5" width="2.6" height="2" rx=".6"/><rect x="23" y="7.5" width="2.6" height="2" rx=".6"/><rect x="28" y="7.5" width="2.6" height="2" rx=".6"/><rect x="33" y="7.5" width="2.6" height="2" rx=".6"/><rect x="3" y="22.5" width="2.6" height="2" rx=".6"/><rect x="8" y="22.5" width="2.6" height="2" rx=".6"/><rect x="13" y="22.5" width="2.6" height="2" rx=".6"/><rect x="18" y="22.5" width="2.6" height="2" rx=".6"/><rect x="23" y="22.5" width="2.6" height="2" rx=".6"/><rect x="28" y="22.5" width="2.6" height="2" rx=".6"/><rect x="33" y="22.5" width="2.6" height="2" rx=".6"/></g></g><path class="play" d="M13.2 11.6 21.4 16 13.2 20.4Z" fill="#fff"/></svg><div><h1>Replay Theater</h1><span class="brand-caption">CODEX · 编辑回放</span></div></div>
+    <div class="header-actions"><span id="save-state" class="save-state" role="status">本地回放</span><button id="help" class="icon-button" aria-label="快捷键说明" title="快捷键说明 · ?"><span data-icon="circle-help"></span></button><button id="close" class="icon-button" aria-label="关闭回放" title="关闭回放 · Esc"><span data-icon="x"></span></button></div>
+  </header>
+  <div id="error" class="error-banner" role="alert" hidden><span id="error-text"></span><button id="retry" class="text-button">重试</button></div>
+  <div id="replay" aria-busy="true">
+    <section class="session-bar" aria-label="回合概览">
+      <label class="turn-picker"><span class="field-caption">回放回合</span><select id="turns" aria-label="选择回合" disabled><option>正在读取历史…</option></select></label>
+      <div class="session-stats"><div><strong id="stat-edits">—</strong><span>次已确认变化</span></div><div><strong id="stat-files">—</strong><span>个文件</span></div><div class="line-stat"><strong><span id="stat-added" class="added-text">—</span><span id="stat-removed" class="removed-text">—</span></strong><span>行变化</span></div></div>
+      <button id="refresh" class="icon-button" aria-label="刷新已保存记录" title="刷新已保存记录；重新运行技能可采集新历史"><span data-icon="refresh-cw"></span></button>
+    </section>
+    <section class="player" aria-label="回放控制">
+      <div class="player-top"><div class="transport"><button id="restart" class="icon-button" aria-label="从头回放" title="从头回放 · Home" disabled><span data-icon="rotate-ccw"></span></button><button id="prev" class="icon-button" aria-label="上一步" title="上一步 · P / ←" disabled><span data-icon="chevron-left"></span></button><button id="play" class="play-button" aria-label="播放回放" title="播放 / 暂停 · Space" disabled><span id="play-icon" data-icon="play"></span><span id="play-label">播放</span></button><button id="next" class="icon-button" aria-label="下一步" title="下一步 · N / →" disabled><span data-icon="chevron-right"></span></button></div><span id="count" class="step-counter" role="status" aria-live="polite">正在读取…</span><label class="speed-picker"><span class="sr-only">播放速度</span><select id="speed" aria-label="播放速度"><option value="3600">0.5×</option><option value="1800" selected>1×</option><option value="900">2×</option></select></label></div>
+      <nav id="filmstrip" class="filmstrip" aria-label="胶片时间轴"></nav>
+      <div class="timeline-caption"><span id="timeline-label">每格胶片是一处编辑</span><span id="timeline-status">点击胶片跳到对应步骤</span></div>
+    </section>
+    <div class="filter-bar"><label class="search-field"><span data-icon="search"></span><input id="search" type="search" placeholder="搜索文件…" aria-label="搜索文件" autocomplete="off"></label><label class="file-filter"><span class="sr-only">筛选文件</span><select id="files" aria-label="筛选文件"><option value="">全部文件</option></select></label><label class="attempt-filter"><input id="attempts" type="checkbox"><span>显示未完成操作</span><span id="attempts-count" class="tiny-badge" hidden></span></label><button id="clear-filters" class="text-button" hidden>清除筛选</button></div>
+    <div class="workspace">
+      <details id="step-panel" class="step-panel" open><summary><span>编辑列表</span><span id="list-count" class="tiny-badge">0</span></summary><nav id="steps" aria-label="编辑列表"></nav></details>
+      <section class="viewer" aria-label="编辑差异">
+        <div class="file-heading"><span class="file-symbol" data-icon="file-code-2"></span><div class="file-title"><h2 id="heading">准备回放</h2><p id="directory" class="muted">正在读取文件编辑记录…</p></div><span id="kind-badge" class="kind-badge" hidden></span></div>
+        <div class="diff-toolbar"><p id="meta" class="diff-meta"></p><div class="diff-actions"><div class="view-toggle" role="group" aria-label="差异视图"><button id="split" aria-pressed="true" title="并排查看"><span data-icon="columns-2"></span><span>并排</span></button><button id="unified" aria-pressed="false" title="统一查看"><span data-icon="list"></span><span>统一</span></button></div><label class="wrap-control" title="代码自动换行"><input id="wrap" type="checkbox" aria-label="代码自动换行"><span data-icon="wrap-text"></span></label><button id="copy" class="icon-button" aria-label="复制当前 diff" title="复制当前 diff" disabled><span data-icon="copy"></span></button></div></div>
+        <p id="attempt-note" class="attempt-note" role="note" hidden></p>
+        <p id="capture-note" class="capture-note" role="note" hidden></p>
+        <div id="diff" tabindex="0" aria-label="代码差异，可横向滚动"><div class="empty-state"><span data-icon="file-code-2"></span><h3>正在整理编辑记录</h3><p>很快就能开始回放。</p></div></div>
+        <div class="diff-footer"><span id="diff-hint">代码保留原始行形，可横向滚动</span><span id="step-kind"></span></div>
+      </section>
+    </div>
+    <footer class="app-footer"><span id="source"></span><button id="about" class="text-button"><span data-icon="info"></span>记录说明</button></footer>
+  </div>
+  <div id="closed" class="closed-state" hidden><span class="closed-icon" data-icon="pause"></span><h2>回放已收起</h2><p>编辑记录和浏览位置已保留，随时继续。</p><button id="reopen" class="primary-button"><span data-icon="play"></span>继续回放</button></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</main>
+<dialog id="help-dialog"><div class="dialog-header"><h2>快捷键</h2><button class="icon-button" data-dismiss aria-label="关闭快捷键说明"><span data-icon="x"></span></button></div><p class="muted">专注查看代码，把手留在键盘上。</p><dl class="shortcuts"><div><dt>播放 / 暂停</dt><dd><kbd>Space</kbd></dd></div><div><dt>上一步</dt><dd><kbd>P</kbd><kbd>←</kbd></dd></div><div><dt>下一步</dt><dd><kbd>N</kbd><kbd>→</kbd></dd></div><div><dt>第一步 / 最后一步</dt><dd><kbd>Home</kbd><kbd>End</kbd></dd></div><div><dt>关闭回放</dt><dd><kbd>Esc</kbd></dd></div><div><dt>查看快捷键</dt><dd><kbd>?</kbd></dd></div></dl></dialog>
+<dialog id="about-dialog"><div class="dialog-header"><h2>记录说明</h2><button class="icon-button" data-dismiss aria-label="关闭记录说明"><span data-icon="x"></span></button></div><ul id="warnings"></ul><p class="muted">刷新会重新读取已保存的快照。要采集新的编辑，请再次运行 Replay Theater 技能。</p></dialog>
+</body>
+</html>

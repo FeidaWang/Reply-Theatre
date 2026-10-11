@@ -1,0 +1,43 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "replay-theater",
+  "version": "0.4.2",
+  "description": "Replay local Codex native file edits, view saved records and export an offline replay using a self-contained skill.",
+  "author": {
+    "name": "Feida Wang",
+    "url": "https://github.com/FeidaWang/"
+  },
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "replay",
+    "diff",
+    "local",
+    "skills"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Replay Theater",
+        "shortDescription": "Replay local Codex file edits",
+        "longDescription": "Replay recorded native file edits from local Codex history in a browser viewer with a film timeline, playback, file filtering and split or unified diffs. Open a supplied saved Replay Theater JSON record or export a self-contained offline HTML replay. Free to use. Live history collection requires Python 3.9 or later, a compatible local Codex app-server and permission to access that history. Saved-record viewing and export require Python and accessible input files. The bundled viewer currently uses Simplified Chinese labels. This edition includes skills and local resources only; it has no MCP connection or automatic file-capture hooks and does not collect Shell, formatter or MCP changes. It can display existing v1/v2 snapshots supplied by the user. It does not reconstruct missing full-file versions.",
+        "developerName": "Feida Wang",
+        "category": "Productivity",
+        "defaultPrompt": [
+          "Replay the recorded file edits from my previous Codex turn.",
+          "Open this saved Replay Theater JSON record.",
+          "Export this saved replay as an offline HTML file."
+        ],
+        "logo": "./assets/logo.png",
+        "composerIcon": "./assets/icon.png",
+        "screenshots": [
+          "./assets/screenshot.png"
+        ]
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "Skills-only local replay edition. Includes native history collection, saved-record viewing and offline HTML export. No MCP configuration, lifecycle hooks or automatic capture. The full local plugin remains separately available."
+      }
+    }
+  }
+}
