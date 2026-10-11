@@ -32,12 +32,15 @@
         "composerIcon": "./assets/icon.png",
         "screenshots": [
           "./assets/screenshot.png"
-        ]
+        ],
+        "websiteURL": "https://github.com/FeidaWang/Reply-Theatre",
+        "supportURL": "https://github.com/FeidaWang/Reply-Theatre/blob/main/SUPPORT.md"
       },
       "publication": {
         "countries": [],
         "release_notes": "Skills-only local replay edition. Includes native history collection, saved-record viewing and offline HTML export. No MCP configuration, lifecycle hooks or automatic capture. The full local plugin remains separately available."
       }
     }
-  }
+  },
+  "repository": "https://github.com/FeidaWang/Reply-Theatre"
 }
