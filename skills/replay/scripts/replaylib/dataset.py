@@ -126,11 +126,14 @@ def collect(client, thread_id, skip_latest=False, max_turns=20, max_pages=100):
         seen_cursors.add(cursor)
     else:
         truncated = bool(cursor)
-    warnings = ["仅包含原生 fileChange；Shell、格式化器、MCP 和子代理的改动可能缺失。", "diff 是当时的记录；未读取当前文件，也不代表完整文件版本。"]
+    warnings = [
+        "Replay includes native file edits. Changes from shell commands, formatters, MCP tools, and subagents may be missing.",
+        "Diffs show changes as they were recorded and may include only part of a file.",
+    ]
     if skipped_turn:
-        warnings.append("当前聊天最新回合已跳过，避免回放本次调用；回合状态来自持久历史。")
+        warnings.append("The latest turn of this chat was skipped to avoid replaying this call.")
     if truncated:
-        warnings.append("已达到历史读取上限；更早的回合未载入。")
+        warnings.append("History limit reached; older turns were not loaded.")
     data = {
         "schemaVersion": 1, "threadId": thread_id, "cwd": thread.get("cwd"),
         "generatedAt": datetime.now(timezone.utc).isoformat(),

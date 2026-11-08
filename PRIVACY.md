@@ -1,20 +1,22 @@
 # Replay Theater privacy policy
 
-Effective date: **11 October 2026**
+Effective date: **8 November 2026**
 
-Publisher and maintainer: **Feida Wang**. Product: **Replay Theater — Skills-only edition**, published in [FeidaWang/Reply-Theatre](https://github.com/FeidaWang/Reply-Theatre).
+Publisher and maintainer: **Feida Wang**. Product: **Replay Theater for Codex**, published in [FeidaWang/Reply-Theatre](https://github.com/FeidaWang/Reply-Theatre).
 
-This policy covers the skill, its bundled Python scripts and local browser viewer in this repository. The full plugin with capture hooks, remote MCP deployments, modified third-party editions and the assistant platform itself have different capabilities and are outside this policy's scope.
+This policy covers the skill, bundled local MCP server, Python scripts and replay viewers in this repository. The full plugin with capture hooks, remote MCP deployments, modified third-party editions and the assistant platform itself have different capabilities and are outside this policy's scope.
 
 ## Local processing and information used
 
 This edition operates in the environment where you run it. It does not provide a publisher-operated replay service, create a Replay Theater account, request an API key or automatically send your replay records to Feida Wang.
 
-When you ask it to collect local Codex history, the reader requests the selected chat's metadata and paginated turn history from your local Codex app-server. It saves recorded native file-change evidence and the metadata needed to display it. A replay can contain source-code diffs, file names and absolute paths, project locations, chat/turn/tool identifiers, timestamps, edit status and line counts, plus the engine path and user-agent information. Source code or paths may themselves contain personal or confidential information. The saved replay does not reproduce the complete conversation or reconstruct complete earlier file versions.
+When you ask the CLI to collect local Codex history, the reader requests the selected chat's metadata and paginated turn history from your local Codex app-server. It saves recorded native file-change evidence and the metadata needed to display it. A replay can contain source-code diffs, file names and absolute paths, project locations, chat/turn/tool identifiers, timestamps, edit status and line counts, plus the engine path and user-agent information. Source code or paths may themselves contain personal or confidential information. The saved replay does not reproduce the complete conversation or reconstruct complete earlier file versions.
 
 When you supply an existing Replay Theater JSON file, the viewer validates and displays that file. A v2 file can include previously recorded tool names, tool outcomes, file hashes and attribution information. Viewing it does not install or activate a recorder. This edition does not collect Shell, formatter or MCP file changes itself.
 
-The viewer uses local browser storage for its selected turn and step, file filter, search text, diff view, wrapping, playback speed and related preferences. In live viewing, it also saves the replay position alongside the chosen JSON. A local server-state file contains process information, the selected record path and the token-scoped viewer URL. These are used to start, reuse or stop the selected viewer. Choosing **Copy diff** writes the selected diff to your system clipboard.
+The local stdio MCP server uses the chat ID provided by the desktop host for that call. It reads recorded edits into memory without saving a new snapshot. A summary returns file display names, edit status and line counts. Asking for a selected diff returns its recorded code excerpt. The interactive MCP panel receives a bounded snapshot including recorded code and display paths as MCP result metadata intended for the panel. The desktop host handles MCP messages under its own terms and privacy settings.
+
+The optional browser viewer uses local browser storage for its selected turn and step, file filter, search text, diff view, wrapping, playback speed and related preferences. In live viewing, it also saves the replay position alongside the chosen JSON. A local server-state file contains process information, the selected record path and the token-scoped viewer URL. These are used to start, reuse or stop the selected viewer. Choosing **Copy diff** writes the selected diff to your system clipboard.
 
 These uses support the replay, filtering, position restoration, copying and export actions you request. The bundled viewer has no advertising or tracking SDK and does not set tracking cookies. It loads its viewer assets locally, and its HTTP access logging is disabled. These statements describe this edition's own code, not the behaviour of your assistant, Codex engine, browser, extensions or operating system.
 

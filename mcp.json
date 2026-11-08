@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "replay-theater": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["-I", "${PLUGIN_ROOT}/skills/replay/scripts/replay_mcp.py"]
+    }
+  }
+}

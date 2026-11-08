@@ -27,10 +27,13 @@ def read_json(path):
 def export_html(data):
     validate_data(data)
     embedded = json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")
+    return standalone_html('<script type="application/json" id="dataset">' + embedded + '</script>')
+
+
+def standalone_html(bootstrap):
     template = (WEB_ROOT / "index.html").read_text(encoding="utf-8")
-    scripts = ('<script type="application/json" id="dataset">' + embedded + '</script>\n<script>'
-               + (WEB_ROOT / "icons.js").read_text(encoding="utf-8") + '</script>\n<script>'
-               + (WEB_ROOT / "app.js").read_text(encoding="utf-8") + '</script>')
+    scripts = (bootstrap + '\n<script>' + (WEB_ROOT / "icons.js").read_text(encoding="utf-8")
+               + '</script>\n<script>' + (WEB_ROOT / "app.js").read_text(encoding="utf-8") + '</script>')
     return (template.replace('<link rel="stylesheet" href="style.css">',
                              "<style>" + (WEB_ROOT / "style.css").read_text(encoding="utf-8") + "</style>")
             .replace('<script src="app.js" defer></script>', '')
@@ -112,12 +115,17 @@ def make_server(data_path, token=None, idle_seconds=43200):
                     if not 0 < length <= 4096:
                         raise ValueError("Invalid length")
                     position = json.loads(self.rfile.read(length))
-                    if not isinstance(position, dict) or set(position) != {"turnId", "stepId", "file", "view", "attempts", "savedAt"}:
+                    required = {"turnId", "stepId", "file", "view", "attempts", "savedAt"}
+                    if not isinstance(position, dict) or set(position) - {"scope"} != required:
                         raise ValueError("Invalid fields")
                     if not all(isinstance(position[k], str) and len(position[k]) <= 2048 for k in ("turnId", "stepId", "file")):
                         raise ValueError("Invalid text")
                     if position["view"] not in {"split", "unified"} or not isinstance(position["attempts"], bool):
                         raise ValueError("Invalid view")
+                    if "scope" in position:
+                        scope = position["scope"]
+                        if scope not in ("applied", "review", "all") or position["attempts"] != (scope != "applied"):
+                            raise ValueError("Invalid scope")
                     if type(position["savedAt"]) is not int or position["savedAt"] < 0:
                         raise ValueError("Invalid saved timestamp")
                     atomic_json(data_path.with_suffix(".position.json"), position)

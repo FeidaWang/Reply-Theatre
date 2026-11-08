@@ -8,6 +8,7 @@ import sys
 
 from replaylib.dataset import atomic_json, collect, dataset_path, validate_data
 from replaylib.history import HistoryClient, HistoryError
+from replaylib.inspection import inspect_replay
 from replaylib.service import ensure_server, export_html, read_json, serve, stop_server
 
 
@@ -27,6 +28,12 @@ def main(argv=None):
         part.add_argument("--max-pages", type=int, default=100)
         part.add_argument("--include-current", action="store_true", help="Include the newest stored turn; it may be incomplete.")
         part.add_argument("--skip-latest", action="store_true")
+    part = sub.add_parser("inspect", help="Read a page of edit summaries or one selected diff without a viewer.")
+    part.add_argument("--data", required=True)
+    part.add_argument("--turn", type=int, default=1, help="Turn number, newest first.")
+    selection = part.add_mutually_exclusive_group()
+    selection.add_argument("--start-step", type=int, default=1, help="First step of a 12-step summary page.")
+    selection.add_argument("--step", type=int, help="Read the recorded diff for this step.")
     part = sub.add_parser("view", help="View a supplied saved JSON snapshot without history requests.")
     part.add_argument("--data", required=True)
     part = sub.add_parser("export", help="Export a self-contained offline HTML replay.")
@@ -56,6 +63,10 @@ def main(argv=None):
             with os.fdopen(fd, "w", encoding="utf-8") as output:
                 output.write(html)
             print(json.dumps({"output": str(destination), "offline": True}))
+            return 0
+        if args.command == "inspect":
+            data = validate_data(read_json(args.data))
+            print(json.dumps(inspect_replay(data, args.turn, args.start_step, args.step), ensure_ascii=False))
             return 0
         if args.command == "view":
             validate_data(read_json(args.data))

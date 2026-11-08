@@ -3,69 +3,95 @@
   const el = id => document.getElementById(id);
   const icons = window.REPLAY_ICONS || {};
   const embedded = el('dataset'), offline = Boolean(embedded);
-  const labels = {add:'创建',update:'修改',delete:'删除',completed:'已完成',failed:'失败',declined:'已拒绝',inProgress:'进行中',interrupted:'已中断'};
-  let data, turnId = '', stepId = '', view = 'split', file = '', attempts = false, search = '', wrap = false;
+  const mcp = window.REPLAY_MCP;
+  const localPage = !offline && !mcp;
+  const labels = {add:'New',update:'Modified',delete:'Deleted',completed:'Completed',failed:'Failed',declined:'Declined',inProgress:'In progress',interrupted:'Interrupted'};
+  const legacyWarnings = new Map([
+    ['仅包含原生 fileChange；Shell、格式化器、MCP 和子代理的改动可能缺失。', 'Replay includes native file edits. Changes from shell commands, formatters, MCP tools, and subagents may be missing.'],
+    ['diff 是当时的记录；未读取当前文件，也不代表完整文件版本。', 'Diffs show changes as they were recorded and may include only part of a file.'],
+  ]);
+  const compact = window.matchMedia('(max-width:720px)');
+  const narrow = window.matchMedia('(max-width:560px)');
+  const scopeButtons = [...el('scope').querySelectorAll('button')];
+  const canAnnotate = localPage && typeof document.oai?.annotation?.request === 'function';
+  let data, turnId = '', stepId = '', view = 'split', scope = 'applied', search = '', wrap = false, listOpen = !compact.matches;
+  let renderedStepId;
   let key, persistTimer, playTimer, toastTimer, writes = Promise.resolve(), playing = false, loading = false, loadId = 0;
   const escape = text => String(text ?? '').replace(/[&<>"']/g,c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function mountIcons(scope = document) {
-    for(const node of scope.querySelectorAll('[data-icon]')) {
+  function mountIcons(root = document) {
+    for(const node of root.querySelectorAll('[data-icon]')) {
       node.innerHTML = icons[node.dataset.icon] || '';
       const svg = node.querySelector('svg');
       if(svg) {svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');}
     }
   }
   const turn = () => data?.turns.find(t => t.id === turnId);
-  const filtered = () => (turn()?.steps || []).filter(s => (!file || s.path === file) && (attempts || s.applied) && s.displayPath.toLowerCase().includes(search.trim().toLowerCase()));
+  function needsReview(step) {
+    const capture = step.provenance;
+    return !step.applied || (capture?.type === 'snapshot' &&
+      (capture.toolStatus !== 'succeeded' || capture.attribution !== 'window' ||
+       capture.ordering === 'unresolved' || capture.limited));
+  }
+  function filtered() {
+    const query = search.trim().toLowerCase();
+    return (turn()?.steps || []).filter(step =>
+      (scope === 'all' || (scope === 'review' ? needsReview(step) : step.applied)) &&
+      step.displayPath.toLowerCase().includes(query));
+  }
   const current = () => filtered().find(s => s.id === stepId);
-  const position = () => ({turnId,stepId,view,file,attempts,savedAt:Date.now()});
+  // `file` stays in the payload: the local server validates the position shape.
+  const position = () => ({turnId,stepId,view,file:'',scope,attempts:scope !== 'applied',savedAt:Date.now()});
   const basename = path => path.replace(/\\/g,'/').split('/').pop() || path;
-  const dirname = path => path.replace(/\\/g,'/').split('/').slice(0,-1).join('/') || '项目根目录';
-  const dateLabel = seconds => seconds ? new Date(seconds*1000).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '时间未知';
+  const effectiveView = () => narrow.matches ? 'unified' : view;
+  const dateLabel = seconds => seconds ? new Date(seconds*1000).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : 'Unknown time';
   function toast(message) {
     clearTimeout(toastTimer);el('toast').textContent = message;el('toast').hidden = false;
     toastTimer = setTimeout(() => {el('toast').hidden = true;},2500);
   }
   function save() {
-    if(!data) return;
+    if(!data || mcp) return;
     const state = position();
     try {localStorage.setItem(key,JSON.stringify({...state,search,wrap,speed:el('speed').value}));} catch {}
-    if(offline) {el('save-state').textContent = '浏览位置已保存';return;}
-    el('save-state').textContent = '保存位置…';clearTimeout(persistTimer);
+    if(offline) return;
+    clearTimeout(persistTimer);
     persistTimer = setTimeout(() => {
       writes = writes.catch(() => {}).then(async () => {
         try {
           const response = await fetch('position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)});
           if(!response.ok) throw Error();
-          el('save-state').textContent = '位置已保存';
-        } catch {el('save-state').textContent = '位置仅保存在浏览器';}
+          el('save-state').textContent = '';
+        } catch {el('save-state').textContent = 'Position saved in this browser only';}
       });
     },120);
   }
   function error(message) {el('error-text').textContent = message;el('error').hidden = !message;}
   function loadingControls() {
-    for(const id of ['turns','search','files','attempts','clear-filters','wrap','speed','split','unified']) el(id).disabled = loading || !data;
+    for(const id of ['turns','search','wrap','speed','split','unified']) el(id).disabled = loading || !data;
+    for(const button of scopeButtons) button.disabled = loading || !data;
     if(!loading && data) el('turns').disabled = !data.turns.length;
-    if(loading) for(const id of ['prev','next','restart','play','copy']) el(id).disabled = true;
+    if(loading) for(const id of ['prev','next','restart','play','copy','annotate']) el(id).disabled = true;
+    else el('annotate').disabled = !data || !current();
   }
   function playerUI() {
-    document.body.dataset.playing = String(playing);
-    el('play').setAttribute('aria-label',playing ? '暂停回放' : '播放回放');
-    el('play-label').textContent = playing ? '暂停' : '播放';
+    el('play').setAttribute('aria-label',playing ? 'Pause' : 'Play');
     el('play-icon').dataset.icon = playing ? 'pause' : 'play';
     mountIcons(el('play'));
   }
+  function listUI() {
+    el('workspace').dataset.list = listOpen ? 'open' : 'closed';
+    el('list-toggle').setAttribute('aria-expanded',String(listOpen));
+  }
   function pause() {
-    const wasPlaying = playing;clearTimeout(playTimer);playing = false;playerUI();
-    if(wasPlaying) el('timeline-status').textContent = '已暂停 · 点击播放继续';
+    clearTimeout(playTimer);playing = false;playerUI();
   }
   function schedule() {
     clearTimeout(playTimer);
     if(!playing) return;
     playTimer = setTimeout(() => {
       const list = filtered(), index = list.findIndex(s => s.id === stepId);
-      if(index >= list.length-1) {pause();el('timeline-status').textContent = '回放结束 · 可以从头再看';return;}
+      if(index >= list.length-1) {pause();return;}
       stepId = list[index+1].id;render();save();
-      if(index+1 >= list.length-1) {pause();el('timeline-status').textContent = '回放结束 · 可以从头再看';}
+      if(index+1 >= list.length-1) pause();
       else schedule();
     },Number(el('speed').value));
   }
@@ -75,19 +101,34 @@
     if(list.findIndex(s => s.id === stepId) === list.length-1) stepId = list[0].id;
     playing = true;render();save();schedule();
   }
-  async function load(initial = false) {
+  async function load(initial = false, mcpResult) {
     const request = ++loadId;pause();loading = true;el('replay').setAttribute('aria-busy','true');
     loadingControls();
     el('refresh').disabled = true;el('play').disabled = true;
     try {
-      const next = offline ? JSON.parse(embedded.textContent) : await fetch('data',{cache:'no-store'}).then(r => {if(!r.ok) throw Error('已保存的历史暂时不可用');return r.json();});
+      let next, isDemo = false;
+      if(mcp) {
+        const result = mcpResult ?? await mcp.read();
+        if(result?.isError) throw Error(result.content?.[0]?.text || 'Local replay unavailable');
+        next = result?._meta?.replay;
+        isDemo = result?._meta?.demo === true;
+      } else if(offline) {
+        next = JSON.parse(embedded.textContent);
+      } else {
+        const response = await fetch('data',{cache:'no-store'});
+        if(!response.ok) throw Error('Saved history is unavailable');
+        next = await response.json();
+      }
       if(request !== loadId) return;
-      if(![1,2].includes(next.schemaVersion) || !Array.isArray(next.turns)) throw Error('不支持的回放数据版本');
-      data = next;key = 'replay-theater:v1:' + data.threadId;
+      if(![1,2].includes(next?.schemaVersion) || !Array.isArray(next.turns)) throw Error('Unsupported replay format');
+      data = next;
+      if(!mcp) key = 'replay-theater:v1:' + data.threadId;
       if(initial) {
         let saved = {}, preferences = {};
-        try {saved = JSON.parse(localStorage.getItem(key) || '{}');preferences = saved;} catch {}
-        if(!offline) {
+        if(!mcp) {
+          try {saved = JSON.parse(localStorage.getItem(key) || '{}');preferences = saved;} catch {}
+        }
+        if(localPage) {
           try {
             const response = await fetch('position',{cache:'no-store'});
             if(response.ok) {const remote = await response.json();if((remote.savedAt || 0) >= (saved.savedAt || 0)) saved = remote;}
@@ -95,51 +136,48 @@
         }
         if(request !== loadId) return;
         turnId = saved.turnId || '';stepId = saved.stepId || '';
-        view = ['split','unified'].includes(saved.view) ? saved.view : (window.matchMedia('(max-width:900px)').matches ? 'unified' : 'split');
-        file = saved.file || '';attempts = saved.attempts === true;
+        view = ['split','unified'].includes(saved.view) ? saved.view : 'split';
+        scope = ['applied','review','all'].includes(saved.scope) ? saved.scope : saved.attempts ? 'all' : 'applied';
         search = typeof preferences.search === 'string' ? preferences.search : '';wrap = preferences.wrap === true;
         if(preferences.speed === '3000') preferences.speed = '3600';
         if(['900','1800','3600'].includes(preferences.speed)) el('speed').value = preferences.speed;
-        el('step-panel').open = !window.matchMedia('(max-width:900px)').matches;
       }
       if(!data.turns.some(t => t.id === turnId)) {turnId = data.turns[0]?.id || '';stepId = '';}
       el('turns').replaceChildren();
-      data.turns.forEach((t,n) => {
+      data.turns.forEach(t => {
         const option = document.createElement('option');option.value = t.id;
-        option.textContent = (n === 0 ? '最近 · ' : '')+dateLabel(t.startedAt)+' · '+t.steps.length+' 次操作 · '+labels[t.status];
+        option.textContent = dateLabel(t.startedAt)+(t.status === 'completed' ? '' : ' · '+labels[t.status]);
         el('turns').append(option);
       });
-      if(!data.turns.length) {const option = document.createElement('option');option.textContent = '暂无可回放的历史回合';el('turns').append(option);}
+      if(!data.turns.length) {const option = document.createElement('option');option.textContent = 'No turns';el('turns').append(option);}
       else el('turns').value = turnId;
       el('turns').disabled = !data.turns.length;
-      el('attempts').checked = attempts;el('search').value = search;el('wrap').checked = wrap;
+      el('search').value = search;el('wrap').checked = wrap;
       el('warnings').replaceChildren();
-      for(const text of data.warnings || []) {const li = document.createElement('li');li.textContent = text;el('warnings').append(li);}
-      el('source').textContent = (offline ? '离线快照' : data.schemaVersion === 2 ? '编辑快照 · 包含工具补录' : '原生编辑快照')+' · '+dateLabel(Date.parse(data.generatedAt)/1000)+(data.source?.truncated ? ' · 更早历史未载入' : ' · 仅在本机保存');
-      el('save-state').textContent = initial && stepId ? '已恢复浏览位置' : '本地回放';
-      rebuildFiles();loading = false;render();error('');
-      if(!initial) toast('已重新载入保存的快照');
+      for(const text of data.warnings || []) {
+        const item = document.createElement('li');
+        item.textContent = legacyWarnings.get(text) ?? text;
+        el('warnings').append(item);
+      }
+      const kind = mcp ? (isDemo ? 'Demo snapshot' : 'Local snapshot') : offline ? 'Offline snapshot' : data.schemaVersion === 2 ? 'Snapshot with tool captures' : 'Native edit snapshot';
+      el('source').textContent = kind+' · '+dateLabel(Date.parse(data.generatedAt)/1000)+(data.source?.truncated ? ' · Older history not loaded' : ' · Stored locally');
+      loading = false;render();error('');
+      if(!initial && !mcpResult) toast('Replay refreshed');
     } catch(e) {
-      loading = false;error('无法载入回放：' + e.message);
-      if(!data) {el('heading').textContent = '历史暂时不可用';el('directory').textContent = '点击上方重试，或重新运行 Replay Theater 技能。';el('count').textContent = '尚未载入';}
+      loading = false;error('Couldn’t load replay: ' + e.message);
+      if(!data) {el('diff').innerHTML = '<div class="empty-state"><h3>History unavailable</h3></div>';el('count').textContent = '—';}
       else render();
     } finally {
       if(request === loadId) {loading = false;loadingControls();el('refresh').disabled = false;el('replay').setAttribute('aria-busy','false');}
     }
   }
-  function rebuildFiles() {
-    const paths = [...new Map((turn()?.steps || []).map(s => [s.path,s.displayPath])).entries()];
-    if(!paths.some(([path]) => path === file)) file = '';
-    el('files').replaceChildren();
-    for(const [path,name] of [['','全部文件'],...paths]) {const option = document.createElement('option');option.value = path;option.textContent = name;el('files').append(option);}
-    el('files').value = file;el('files').title = file || '全部文件';
-  }
   function stats() {
     const steps = (turn()?.steps || []).filter(s => s.applied && (!s.provenance || s.provenance.type === 'native' || s.provenance.attribution === 'window'));
     el('stat-edits').textContent = steps.length;el('stat-files').textContent = new Set(steps.map(s => s.path)).size;
     el('stat-added').textContent = '+'+steps.reduce((n,s) => n+s.added,0);el('stat-removed').textContent = '−'+steps.reduce((n,s) => n+s.removed,0);
-    const proposed = (turn()?.steps || []).filter(s => !s.applied).length;
-    el('attempts-count').hidden = !proposed;el('attempts-count').textContent = proposed;
+    const reviewCount = (turn()?.steps || []).filter(needsReview).length;
+    el('review-count').hidden = !reviewCount;
+    el('review-count').textContent = reviewCount;
   }
   function timeline(list,index) {
     el('filmstrip').replaceChildren();
@@ -147,21 +185,18 @@
     for(let n=0;n<bins;n++) {
       const start = Math.floor(n*list.length/bins), end = Math.floor((n+1)*list.length/bins);
       const group = list.slice(start,end), add = group.reduce((a,s) => a+s.added,0), del = group.reduce((a,s) => a+s.removed,0);
-      const button = document.createElement('button');button.className = 'film-frame'+(group.some(s => !s.applied) ? ' proposed' : '');
-      button.setAttribute('aria-label','跳到第 '+(start+1)+' 步：'+group[0].displayPath);
-      button.title = (start+1)+(end-start > 1 ? '–'+end : '')+' · '+group[0].displayPath+' · +'+add+' / −'+del;
+      const button = document.createElement('button');button.type = 'button';button.className = 'film-frame'+(group.some(needsReview) ? ' needs-review' : '');
+      button.setAttribute('aria-label','Edit '+(start+1)+': '+group[0].displayPath);
+      button.title = (start+1)+(end-start > 1 ? '–'+end : '')+' · '+group[0].displayPath+' · +'+add+' −'+del;
       button.dataset.stepId = group[0].id;button.setAttribute('aria-current',index >= start && index < end ? 'step' : 'false');
       for(const [count,type] of [[add,'add'],[del,'del']]) {
         if(count) {const segment = document.createElement('span');segment.className = 'frame-'+type;segment.style.flexGrow = String(count);button.append(segment);}
       }
-      button.onclick = () => {if(loading) return;pause();stepId = group[0].id;render();save();};el('filmstrip').append(button);
+      button.onclick = () => selectStep(group[0]);el('filmstrip').append(button);
     }
-    const total = (turn()?.steps || []).filter(s => attempts || s.applied).length;
-    el('timeline-label').textContent = list.length === total ? list.length+' 次操作 · 按时间顺序' : '当前筛选 '+list.length+' / '+total+' 次操作';
-    el('timeline-status').textContent = playing ? '正在播放…' : '点击胶片跳步';
   }
   function cells(line,side) {
-    if(!line) return '<td class="line-number'+(side === 'new' ? ' middle' : '')+'"></td><td>&#8203;</td>';
+    if(!line) return '<td class="line-number'+(side === 'new' ? ' middle' : '')+'"></td><td class="blank">&#8203;</td>';
     const type = line.op === '+' ? 'added' : line.op === '-' ? 'removed' : '';
     return '<td class="line-number '+(side === 'new' ? 'middle ' : '')+type+'">'+(line[side] ?? '')+'</td><td class="'+type+'">'+(escape(line.text) || '&#8203;')+'</td>';
   }
@@ -177,7 +212,7 @@
       flush();
       return '<div class="split-content">'+['old','new'].map(side => {
         const rows = pairs.map(pair => pair.note ? '<tr><td colspan="2" class="'+(pair.note.op === '@' ? 'hunk' : 'note')+'">'+escape(pair.note.text)+'</td></tr>' : '<tr>'+cells(pair[side],side)+'</tr>').join('');
-        return '<div class="split-pane" tabindex="0" aria-label="'+(side === 'old' ? '修改前代码' : '修改后代码')+'，可横向滚动"><table class="diff-table pane-table"><colgroup><col class="line-number"><col></colgroup><thead><tr><th colspan="2">'+(side === 'old' ? '修改前' : '修改后')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+        return '<div class="split-pane" tabindex="0" aria-label="'+(side === 'old' ? 'Before' : 'After')+'"><table class="diff-table pane-table"><colgroup><col class="line-number"><col></colgroup><tbody>'+rows+'</tbody></table></div>';
       }).join('')+'</div>';
     }
     let rows = '', before = [], after = [];
@@ -187,7 +222,7 @@
       else {flush();if(line.op === ' ') rows += '<tr>'+cells(line,'old')+cells(line,'new')+'</tr>';else rows += '<tr><td colspan="4" class="'+(line.op === '@' ? 'hunk' : 'note')+'">'+escape(line.text)+'</td></tr>';}
     }
     flush();
-    return '<table class="diff-table split-table"><colgroup><col class="line-number"><col><col class="line-number"><col></colgroup><thead><tr><th colspan="2">修改前</th><th class="middle" colspan="2">修改后</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    return '<table class="diff-table split-table"><colgroup><col class="line-number"><col><col class="line-number"><col></colgroup><tbody>'+rows+'</tbody></table>';
   }
   function unifiedLines(lines) {
     const rows = lines.map(line => {
@@ -198,97 +233,226 @@
     return '<table class="diff-table unified-table"><colgroup><col class="line-number"><col class="line-number"><col></colgroup><tbody>'+rows+'</tbody></table>';
   }
   function emptyState() {
-    const hasTurns = data.turns.length > 0, allProposed = (turn()?.steps.length || 0) > 0 && !turn().steps.some(s => s.applied);
-    const title = hasTurns ? '没有匹配的编辑' : '还没有可回放的编辑';
-    const message = !hasTurns ? '有文件编辑的回合结束后，再运行回放即可。当前调用所在的回合会默认跳过。' : allProposed && !attempts ? '这个回合只有未完成操作。勾选“显示未完成操作”可查看提议 diff。' : '换个文件名试试，或清除筛选查看这个回合的全部编辑。';
-    el('diff').innerHTML = '<div class="empty-state"><span data-icon="search"></span><h3>'+title+'</h3><p>'+message+'</p>'+(hasTurns && !allProposed ? '<button id="empty-clear" class="primary-button">清除筛选</button>' : '')+'</div>';
-    if(el('empty-clear')) el('empty-clear').onclick = clearFilters;mountIcons(el('diff'));
+    const steps = turn()?.steps || [];
+    const hasTurns = data.turns.length > 0;
+    let title = 'No matching edits';
+    let action = 'Clear filter', onAction = clearFilters;
+    if(!hasTurns) {
+      title = 'No edits to replay';
+      action = '';
+    } else if(scope === 'review' && !steps.some(needsReview)) {
+      title = 'Nothing to review';
+      action = 'Show applied';
+      onAction = () => selectScope('applied');
+    } else if(scope === 'applied' && !search.trim() && steps.length && steps.every(step => !step.applied)) {
+      title = 'No applied edits';
+      action = 'Show review';
+      onAction = () => selectScope('review');
+    }
+    el('diff').innerHTML = '<div class="empty-state"><h3>'+title+'</h3>'+
+      (action ? '<button id="empty-action" class="primary-button" type="button">'+action+'</button>' : '')+'</div>';
+    if(action) el('empty-action').onclick = onAction;
+  }
+  function stepNote(step) {
+    const notes = [];
+    if(!step.applied) notes.push(labels[step.status]+' · Not applied');
+    const capture = step.provenance?.type === 'snapshot' ? step.provenance : null;
+    if(capture) {
+      const tool = capture.toolName === 'Bash' ? 'Shell' : capture.toolName.startsWith('mcp__') ? 'MCP' : 'Tool';
+      notes.push(capture.mode === 'manual' ? tool+' · manual capture' : capture.mode === 'test' ? tool+' · test capture' : tool);
+      if(capture.toolStatus === 'failed') notes.push('Tool failed');
+      if(Number.isInteger(capture.exitCode)) notes.push('Exit '+capture.exitCode);
+      if(capture.toolStatus === 'unknown') notes.push('Result unknown');
+      if(capture.toolStatus === 'interrupted') notes.push('Interrupted');
+      if(capture.attribution !== 'window') notes.push('Attribution uncertain');
+      if(capture.ordering === 'unresolved') notes.push('Order unresolved');
+      if(capture.limited) notes.push('Partial capture');
+    }
+    el('step-note').hidden = !notes.length;
+    el('step-note').textContent = notes.join(' · ');
+    el('step-note').dataset.review = String(needsReview(step));
+    el('step-note').title = capture?.toolStatusSource === 'native-transcript-completion' ? 'Exit status from the matching native completion event' : '';
   }
   function render() {
     if(!data) return;
     const list = filtered();let index = list.findIndex(s => s.id === stepId);if(index < 0) index = 0;
     if(list.length) stepId = list[index].id;
+    const selectionChanged = renderedStepId !== list[index]?.id;
+    renderedStepId = list[index]?.id;
     const focused = document.activeElement?.dataset.stepId;
     const focusedRegion = document.activeElement?.closest('#filmstrip') ? 'filmstrip' : 'steps';
+    const repeated = new Set(), seen = new Set();
+    for(const step of list) {const name = basename(step.displayPath);if(seen.has(name)) repeated.add(name);seen.add(name);}
     el('steps').replaceChildren();
     list.forEach((step,n) => {
       const button = document.createElement('button');button.type = 'button';button.className = 'step-button';button.dataset.stepId = step.id;
-      button.setAttribute('aria-current',n === index ? 'step' : 'false');button.setAttribute('aria-label','第 '+(n+1)+' 步：'+step.displayPath+'，'+labels[step.kind]+'，'+labels[step.status]);button.title = step.displayPath;
-      button.innerHTML = '<span class="step-index">'+String(n+1).padStart(2,'0')+'</span><span class="step-content"><span class="step-name">'+escape(basename(step.displayPath))+'</span><span class="step-directory">'+escape(dirname(step.displayPath))+'</span><span class="step-detail">'+escape(labels[step.kind])+'<span class="added-text">+'+step.added+'</span><span class="removed-text">−'+step.removed+'</span>'+(step.applied ? '' : '<span>'+escape(labels[step.status])+'</span>')+'</span></span>';
-      button.onclick = () => {if(loading) return;pause();stepId = step.id;render();save();};el('steps').append(button);
+      const flagged = needsReview(step), name = basename(step.displayPath);
+      button.setAttribute('aria-current',n === index ? 'step' : 'false');
+      button.setAttribute('aria-label','Edit '+(n+1)+': '+step.displayPath+', '+labels[step.kind]+(flagged ? ', needs review' : '')+', +'+step.added+' −'+step.removed);
+      button.title = step.displayPath;
+      button.dataset.kind = step.kind;
+      button.innerHTML = '<span class="step-index">'+String(n+1).padStart(2,'0')+'</span>'+
+        '<span class="step-name">'+escape(repeated.has(name) && step.displayPath !== name ? step.displayPath : name)+'</span>'+
+        '<span class="step-delta" aria-hidden="true">'+(step.added ? '<span class="added-text">+'+step.added+'</span>' : '')+(step.removed ? '<span class="removed-text">−'+step.removed+'</span>' : '')+'</span>'+
+        '<span class="step-flag" aria-hidden="true"></span>';
+      button.dataset.review = String(flagged);
+      button.onclick = () => {selectStep(step);if(compact.matches) {listOpen = false;listUI();}};
+      el('steps').append(button);
     });
-    el('list-count').textContent = list.length;el('prev').disabled = !list.length || index === 0;
+    if(selectionChanged && listOpen) {
+      el('steps').children[index]?.scrollIntoView({block:'nearest',inline:'nearest'});
+    }
+    el('prev').disabled = !list.length || index === 0;
     el('next').disabled = !list.length || index === list.length-1;el('restart').disabled = !list.length || index === 0;
     el('play').disabled = list.length < 2 || loading;el('copy').disabled = !list.length;
-    el('count').textContent = list.length ? '第 '+(index+1)+' / '+list.length+' 步' : '0 步';
+    el('annotate').disabled = !list.length;
+    for(const button of scopeButtons) button.setAttribute('aria-pressed',button.dataset.scope === scope);
+    el('count').textContent = list.length ? (index+1)+' / '+list.length : '0';
     el('split').setAttribute('aria-pressed',view === 'split');el('unified').setAttribute('aria-pressed',view === 'unified');
-    el('clear-filters').hidden = !file && !search.trim() && !attempts;
-    el('diff').classList.toggle('wrap-code',wrap);el('diff-hint').textContent = wrap ? '自动换行已开启 · diff 为当时的记录片段' : view === 'split' ? '左右面板可分别横向滚动 · 保留原始行形' : '保留原始代码行 · 长行可横向滚动';
-    el('attempt-note').hidden = true;el('capture-note').hidden = true;stats();timeline(list,index);playerUI();
+    el('clear-search').hidden = !search;
+    el('diff').classList.toggle('wrap-code',wrap);
+    el('step-note').hidden = true;stats();timeline(list,index);playerUI();listUI();
     if(focused) {const target = [...el(focusedRegion).querySelectorAll('button')].find(b => b.dataset.stepId === focused);target?.focus({preventScroll:true});}
     if(!list.length) {
-      el('heading').textContent = '编辑差异';el('directory').textContent = '选择一个编辑步骤，查看当时的变化。';el('meta').textContent = '';el('kind-badge').hidden = true;el('step-kind').textContent = '';emptyState();return;
+      el('heading').textContent = '';
+      el('heading').removeAttribute('title');
+      el('meta').textContent = '';
+      el('kind-badge').hidden = true;
+      emptyState();return;
     }
-    const step = list[index];el('heading').textContent = basename(step.displayPath)+(step.displayMovePath ? ' → '+basename(step.displayMovePath) : '');
-    el('directory').textContent = step.displayPath+(step.displayMovePath ? ' → '+step.displayMovePath : '');el('directory').title = el('directory').textContent;
-    el('kind-badge').hidden = false;el('kind-badge').textContent = step.displayMovePath ? '移动 / 修改' : labels[step.kind];
-    const capture = step.provenance?.type === 'snapshot' ? step.provenance : null;
-    el('meta').innerHTML = '<span>'+escape(capture ? '已观察到修改' : labels[step.status])+'</span><span class="added-text">+'+step.added+'</span><span class="removed-text">−'+step.removed+'</span>';
-    el('step-kind').textContent = '原生文件编辑';
-    if(capture) {
-      const tool = capture.toolName === 'Bash' ? 'Shell' : capture.toolName.startsWith('mcp__') ? 'MCP' : '工具';
-      const mode = capture.mode === 'manual' ? '手动采集' : capture.mode === 'test' ? '采集器测试' : '自动补录';
-      const notes = [mode+' · '+tool+' 执行期间观察到的文件变化。'];
-      if(capture.toolStatus === 'failed') notes.push('工具返回失败，但这些文件变化已经发生。');
-      if(Number.isInteger(capture.exitCode)) notes.push(`退出码 ${capture.exitCode}。`);
-      if(capture.toolStatusSource === 'native-transcript-completion') notes.push('退出状态来自匹配的原生完成事件。');
-      if(capture.toolStatus === 'unknown' || capture.toolStatus === 'interrupted') notes.push('工具结果未知或已中断。');
-      if(capture.attribution !== 'window') notes.push('执行窗口重叠或缺少完整事件，无法精确归因；未计入顶部确认统计。');
-      if(capture.ordering === 'unresolved') notes.push('未匹配原生工具 ID，具体先后顺序待确认。');
-      if(capture.limited) notes.push('部分文件受采集范围或扫描限制，未完整覆盖。');
-      el('capture-note').textContent = notes.join(' ');el('capture-note').hidden = false;
-      el('step-kind').textContent = tool+' · '+mode;
-    }
-    if(!step.applied) {el('attempt-note').hidden = false;el('attempt-note').textContent = labels[step.status]+' · 以下是提议 diff，未确认完整执行。失败操作可能有部分副作用。';}
-    el('diff').innerHTML = step.lines.length ? (view === 'split' ? splitLines(step.lines) : unifiedLines(step.lines)) : '<div class="empty-state"><h3>没有文本行变化</h3><p>这可能是空文件或仅移动路径的操作。</p></div>';
+    const step = list[index];
+    const path = step.displayPath+(step.displayMovePath ? ' → '+step.displayMovePath : '');
+    el('heading').textContent = path;
+    el('heading').title = path;
+    el('kind-badge').hidden = Boolean(step.displayMovePath) || step.kind === 'update';
+    el('kind-badge').textContent = labels[step.kind];
+    el('kind-badge').dataset.kind = step.kind;
+    el('meta').innerHTML = '<span class="added-text">+'+step.added+'</span><span class="removed-text">−'+step.removed+'</span>';
+    stepNote(step);
+    el('diff').innerHTML = step.lines.length ? (effectiveView() === 'split' ? splitLines(step.lines) : unifiedLines(step.lines)) : '<div class="empty-state"><h3>No line changes</h3></div>';
+    if(selectionChanged) el('diff').scrollTo(0,0);
   }
-  function go(delta) {if(!data || loading) return;pause();const list = filtered(), index = Math.max(0,list.findIndex(s => s.id === stepId));stepId = list[Math.max(0,Math.min(index+delta,list.length-1))]?.id || '';render();save();}
-  function jump(last = false) {if(loading) return;pause();const list = filtered();stepId = (last ? list[list.length-1] : list[0])?.id || '';render();save();}
-  function clearFilters() {if(loading) return;pause();file = '';search = '';attempts = false;el('files').value = '';el('files').title = '全部文件';el('search').value = '';el('attempts').checked = false;render();save();}
-  function close() {pause();save();el('replay').hidden = true;el('closed').hidden = false;el('close').hidden = true;el('reopen').focus();}
+  function selectStep(step) {
+    if(loading || !step) return;
+    pause();stepId = step.id;render();save();
+  }
+  function go(delta) {
+    if(!data || loading) return;
+    const list = filtered(), index = list.findIndex(s => s.id === stepId);
+    selectStep(list[Math.max(0,Math.min(index+delta,list.length-1))]);
+  }
+  function jump(last = false) {
+    const list = filtered();
+    selectStep(last ? list[list.length-1] : list[0]);
+  }
+  function selectScope(next) {
+    if(loading) return;
+    pause();scope = next;render();save();
+  }
+  function clearFilters() {
+    if(loading) return;
+    pause();search = '';el('search').value = '';render();save();
+  }
   function showDialog(id) {pause();el(id).showModal();}
   el('prev').onclick = () => go(-1);el('next').onclick = () => go(1);el('restart').onclick = () => jump();el('play').onclick = togglePlay;
   el('speed').onchange = () => {save();if(playing) schedule();};
   el('split').onclick = () => {view = 'split';render();save();};el('unified').onclick = () => {view = 'unified';render();save();};
-  el('files').onchange = () => {pause();file = el('files').value;el('files').title = file || '全部文件';render();save();};
   el('search').oninput = () => {pause();search = el('search').value;render();save();};
-  el('turns').onchange = () => {pause();turnId = el('turns').value;file = '';search = '';stepId = '';el('search').value = '';rebuildFiles();render();save();};
-  el('attempts').onchange = () => {pause();attempts = el('attempts').checked;render();save();};
+  el('clear-search').onclick = event => {event.preventDefault();search = '';el('search').value = '';render();save();el('search').focus();};
+  el('turns').onchange = () => {pause();turnId = el('turns').value;search = '';stepId = '';el('search').value = '';render();save();};
+  for(const button of scopeButtons) button.onclick = () => selectScope(button.dataset.scope);
   el('wrap').onchange = () => {wrap = el('wrap').checked;render();save();};
-  el('clear-filters').onclick = clearFilters;el('refresh').onclick = () => load();el('refresh').hidden = offline;el('retry').onclick = () => load(!data);
-  el('close').onclick = close;el('reopen').onclick = () => {el('replay').hidden = false;el('closed').hidden = true;el('close').hidden = false;el('play').focus();};
-  el('help').onclick = () => showDialog('help-dialog');el('about').onclick = () => showDialog('about-dialog');
+  el('list-toggle').onclick = () => {listOpen = !listOpen;listUI();if(listOpen && compact.matches) el('search').focus();};
+  el('refresh').onclick = () => load();el('refresh').hidden = offline;el('retry').onclick = () => load(!data);
+  el('about').onclick = () => showDialog('about-dialog');
   document.querySelectorAll('[data-dismiss]').forEach(button => {button.onclick = () => button.closest('dialog').close();});
   document.querySelectorAll('dialog').forEach(dialog => {dialog.addEventListener('click',event => {if(event.target === dialog) {const r = dialog.getBoundingClientRect();if(event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close();}});});
   el('copy').onclick = async () => {
     const step = current();if(!step) return;
-    try {await navigator.clipboard.writeText(step.diff);toast('当前 diff 已复制');} catch {toast('剪贴板暂时不可用，可在代码区域选择文字复制');}
+    try {await navigator.clipboard.writeText(step.diff);toast('Diff copied');} catch {toast('Clipboard unavailable — select the code to copy');}
   };
+  el('annotate').hidden = !canAnnotate;
+  el('annotate').onclick = () => {
+    const step = current();
+    if(!step || loading) return;
+    pause();
+    const result = document.oai.annotation.request(el('file-context'), {
+      metadata: {
+        File: step.displayPath.slice(0,256),
+        Step: turn().steps.indexOf(step)+1,
+        Status: labels[step.status],
+        Applied: step.applied,
+      },
+      omitScreenshot: true,
+    });
+    if(!result?.accepted) toast('Annotation unavailable — check the site’s annotation setting');
+  };
+  async function registerSiteTool() {
+    const context = document.modelContext;
+    if(!localPage || typeof context?.registerTool !== 'function') return;
+    try {
+      await context.registerTool({
+        name: 'show_replay_step',
+        description: 'Jump to a 1-based step in the current Replay Theater view, respecting its turn and filters. Pauses playback and saves the viewing position.',
+        inputSchema: {
+          type: 'object',
+          properties: {step: {type: 'integer',minimum: 1,description: 'Step number as shown in the player'}},
+          required: ['step'],
+          additionalProperties: false,
+        },
+        execute: async input => {
+          const step = input?.step;
+          if(!data || loading || document.querySelector('dialog[open]')) {
+            return {error: 'The replay view is not available.'};
+          }
+          const list = filtered();
+          if(!Number.isInteger(step) || step < 1 || step > list.length) {
+            return {error: 'Step is outside the current view.',total: list.length};
+          }
+          const edit = list[step-1];
+          selectStep(edit);
+          return {step,total: list.length,file: edit.displayPath,status: edit.status,needsReview: needsReview(edit)};
+        },
+      });
+    } catch {
+      // Site-tool permission or support does not affect manual navigation.
+    }
+  }
   document.addEventListener('keydown',e => {
     if(document.querySelector('dialog[open]')) return;
-    if(loading && !['?','Escape'].includes(e.key)) return;
+    if(e.key === 'Escape' && e.target === el('search')) {
+      if(search) {search = '';el('search').value = '';render();save();}
+      else el('search').blur();
+      return;
+    }
+    if(loading && e.key !== '?') return;
     if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable || e.ctrlKey || e.metaKey || e.altKey) return;
+    if(e.key === ' ' && e.target.closest('button')) return;
     if(e.target.closest('#diff') && ['ArrowRight','ArrowLeft','Home','End',' '].includes(e.key)) return;
-    if(e.key === '?') {e.preventDefault();showDialog('help-dialog');}
-    else if(e.key === 'Escape' && !el('replay').hidden) {e.preventDefault();close();}
-    else if(data && !el('replay').hidden) {
+    if(e.key === '?') {e.preventDefault();showDialog('about-dialog');}
+    else if(e.key === '/') {e.preventDefault();if(!listOpen) {listOpen = true;listUI();}el('search').focus();}
+    else if(e.key === 'Escape' && compact.matches && listOpen) {e.preventDefault();listOpen = false;listUI();}
+    else if(data) {
       if(['n','N','ArrowRight','p','P','ArrowLeft'].includes(e.key)) {e.preventDefault();go(['n','N','ArrowRight'].includes(e.key) ? 1 : -1);}
       else if(e.key === ' ') {e.preventDefault();togglePlay();}
       else if(['Home','End'].includes(e.key)) {e.preventDefault();jump(e.key === 'End');}
     }
   });
   document.addEventListener('visibilitychange',() => {if(document.hidden) pause();});
-  window.addEventListener('pagehide',() => {pause();if(data && !offline && navigator.sendBeacon) {clearTimeout(persistTimer);navigator.sendBeacon('position',JSON.stringify(position()));}});
-  window.matchMedia('(max-width:900px)').addEventListener('change',e => {el('step-panel').open = !e.matches;});
-  mountIcons();load(true);
+  window.addEventListener('pagehide',() => {pause();if(data && localPage && navigator.sendBeacon) {clearTimeout(persistTimer);navigator.sendBeacon('position',JSON.stringify(position()));}});
+  document.addEventListener('pointerdown',e => {
+    if(compact.matches && listOpen && !e.target.closest('#step-panel, #list-toggle')) {listOpen = false;listUI();}
+  });
+  compact.addEventListener('change',e => {listOpen = !e.matches;listUI();});
+  narrow.addEventListener('change',() => render());
+  mountIcons();listUI();
+  if(mcp) {
+    el('refresh').title = 'Load replay';
+    el('refresh').setAttribute('aria-label','Load replay');
+    loadingControls();
+    mcp.start(result => load(!data,result));
+  } else {
+    load(true);
+    void registerSiteTool();
+  }
 })();

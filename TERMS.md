@@ -1,8 +1,8 @@
 # Replay Theater terms of use
 
-Effective date: **11 October 2026**
+Effective date: **8 November 2026**
 
-Publisher and maintainer: **Feida Wang**. These terms cover **Replay Theater — Skills-only edition** distributed through [FeidaWang/Reply-Theatre](https://github.com/FeidaWang/Reply-Theatre), including the bundled skill, Python scripts, local viewer and related documentation.
+Publisher and maintainer: **Feida Wang**. These terms cover **Replay Theater for Codex** distributed through [FeidaWang/Reply-Theatre](https://github.com/FeidaWang/Reply-Theatre), including the bundled skill, local MCP server, Python scripts, replay viewers and related documentation.
 
 ## Licence and price
 
@@ -14,7 +14,7 @@ The software is licensed under the [MIT licence](LICENSE). That licence governs 
 
 Replay Theater helps you inspect recorded local file edits or a supplied saved JSON record and export an HTML replay. It requires Python 3.9 or later. Native history collection additionally requires a compatible local Codex app-server, permission to access the selected chat and its verified identifier. Installing this skill does not grant filesystem access, a Codex engine or account permissions to a cloud environment.
 
-This edition has no MCP connection, automatic file-capture hooks or publisher-operated replay server. It does not change your project files as part of replay, but it writes replay snapshots, viewer state and requested exports. An export can overwrite the destination you select. Use an appropriate output path and retain any backups you need.
+The bundled local MCP server reads recorded edits from the local chat bound by the host. CLI workflows may write replay snapshots, browser viewer state and requested exports. An export can overwrite the destination you select. Use an appropriate output path and retain any backups you need.
 
 Follow the permissions and trust rules of your host, organisation and operating system. Use existing compatible software; do not modify installed browser or application bundles, bypass review gates or weaken access controls to make the viewer run.
 

@@ -1,3 +1,3 @@
-"""Skills-only local Codex edit replay."""
+"""Local Codex edit replay."""
 
-VERSION = "0.4.3"
+VERSION = "0.5.0"
