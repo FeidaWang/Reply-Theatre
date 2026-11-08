@@ -1,0 +1,99 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "replay-theater-demo",
+  "version": "0.1.3",
+  "description": "Practise reviewing edits from an AI coding assistant with four sample file changes.",
+  "author": {
+    "name": "Feida Wang",
+    "url": "https://github.com/FeidaWang/"
+  },
+  "license": "MIT",
+  "keywords": [
+    "replay",
+    "diff",
+    "demo"
+  ],
+  "repository": "https://github.com/FeidaWang/Reply-Theatre",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Replay Theater",
+        "shortDescription": "Practice reviewing file edits",
+        "longDescription": "Practise checking an AI coding assistant's work before you approve it or pass it to a teammate. Ask for a list of four sample edits, pick one to see the lines added and removed, and learn to spot a failed proposal. The hosted demo uses the same sample files for everyone and offers read-only tools.",
+        "developerName": "Feida Wang",
+        "category": "Developer Tools",
+        "defaultPrompt": [
+          "List the sample edits so I can see which files changed.",
+          "Show me which lines were added or removed in sample step 2.",
+          "Which sample edit failed, and what did it propose?"
+        ],
+        "logo": "./assets/logo.png",
+        "composerIcon": "./assets/icon.png",
+        "websiteURL": "https://github.com/FeidaWang/Reply-Theatre",
+        "supportURL": "https://github.com/FeidaWang/Reply-Theatre/blob/main/SUPPORT.md",
+        "privacyPolicyURL": "https://replay-theater-demo.475035492.workers.dev/privacy.html",
+        "termsOfServiceURL": "https://replay-theater-demo.475035492.workers.dev/terms.html"
+      },
+      "review": {
+        "commerce": false,
+        "prompts": [
+          "List the sample edits so I can see which files changed.",
+          "Show me which lines were added or removed in sample step 2.",
+          "Which sample edit failed, and what did it propose?"
+        ],
+        "test_cases": {
+          "positive": [
+            {
+              "description": "List the fixed sample without including diff bodies.",
+              "prompt": "List the edits in the Replay Theater demo.",
+              "tools_triggered": "list_demo_edits",
+              "expected_behavior": "Call with no arguments. List four sample edits in order, with step 4 marked failed and unapplied."
+            },
+            {
+              "description": "Show the recorded replacement in the selected edit.",
+              "prompt": "Show the diff for step 2 of the Replay Theater demo.",
+              "tools_triggered": "get_demo_diff",
+              "expected_behavior": "Use step=2. Show greeting.py changing print(\"Hello\") to print(\"Hello, replay!\")."
+            },
+            {
+              "description": "Find a failed proposal by status, then inspect that proposal.",
+              "prompt": "Which demo edit failed, and what did it propose?",
+              "tools_triggered": "list_demo_edits, get_demo_diff",
+              "expected_behavior": "Find the failed edit from the list, then call with step=4. Label the returned diff as a failed, unapplied proposal."
+            },
+            {
+              "description": "Resolve a named file to its sample step before requesting the diff.",
+              "prompt": "What line was added to notes.txt in the Replay Theater demo?",
+              "tools_triggered": "list_demo_edits, get_demo_diff",
+              "expected_behavior": "Find notes.txt at step 3, then retrieve that diff and show its added line."
+            },
+            {
+              "description": "Compare addition and removal counts from the sample edit list.",
+              "prompt": "Which sample edits in Replay Theater have additions and zero removals?",
+              "tools_triggered": "list_demo_edits",
+              "expected_behavior": "Use the counts in the list to identify steps 1 and 3."
+            }
+          ],
+          "negative": [
+            {
+              "description": "The requested step is outside the four-step demo. Explain the available range without inventing a diff.",
+              "prompt": "Show me the diff for step 5 in the Replay Theater demo."
+            },
+            {
+              "description": "The demo cannot inspect personal Codex history. Explain its sample-only scope.",
+              "prompt": "Use Replay Theater Demo to see what Codex changed in my last local chat."
+            },
+            {
+              "description": "The tools are read-only. Explain that the demo cannot change files.",
+              "prompt": "Apply the changes from step 2 of the Replay Theater demo to my project."
+            }
+          ]
+        },
+        "demo_recording_url": "https://replay-theater-demo.475035492.workers.dev/replay-theater-demo-walkthrough.mp4"
+      },
+      "publication": {
+        "release_notes": "Explains how to practise reviewing file changes with the sample replay."
+      }
+    }
+  }
+}

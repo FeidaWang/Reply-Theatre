@@ -4,6 +4,8 @@ Replay Theater is maintained by Feida Wang. For questions, reproducible bugs or 
 
 Include your package version, operating system, Python version, command used and the error message. For a viewer issue, explain the expected and observed behaviour. When possible, reproduce it with the bundled `skills/replay/examples/native-edits.json` example.
 
+For the hosted demo, include the sample step number or prompt and the result you saw. The sample data is the same for everyone.
+
 GitHub issues are public. Remove private chat IDs, absolute project paths, source code, access tokens and other personal information before posting. Do not attach a personal replay snapshot; use a small synthetic example instead. There is no paid support subscription or guaranteed response time.
 
 This repository prepares a desktop edition with bundled local MCP and a conversation skill. Automatic file-capture hooks belong to the separate full plugin. The publisher does not operate a replay-processing server for this edition. OpenAI directory submission and account identity verification are separate from publishing this GitHub repository.

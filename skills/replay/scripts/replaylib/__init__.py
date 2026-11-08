@@ -1,3 +1,3 @@
 """Local Codex edit replay."""
 
-VERSION = "0.5.0"
+VERSION = "0.5.1"

@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "replay-theater",
-  "version": "0.5.0",
-  "description": "Review recorded local Codex edits in the conversation or Replay Theater thread panel.",
+  "version": "0.5.1",
+  "description": "See which files Codex changed, check the lines it added or removed, and spot edits that need a closer look.",
   "author": {
     "name": "Feida Wang",
     "url": "https://github.com/FeidaWang/"
@@ -19,20 +19,17 @@
     "com.openai": {
       "interface": {
         "displayName": "Replay Theater",
-        "shortDescription": "Replay local Codex file edits",
-        "longDescription": "Review recorded file edits from your local Codex chat, then open Replay Theater in the thread panel to step through diffs. Browse numbered edits in the conversation, inspect a selected diff, and try a synthetic replay without using personal history. The local MCP server requires Python 3.9 or later and a compatible Codex desktop host. Live review requires a host-bound local chat. The player uses English labels. Recorded native edits may omit shell, formatter, MCP, and subagent changes.",
+        "shortDescription": "Review Codex file changes",
+        "longDescription": "After Codex edits your project, use Replay Theater to see what changed before you approve the work or hand it to a teammate. In the local chat where the work happened, ask for a numbered list of recorded edits. Pick a step to see the lines added and removed, or open the player to move through edits one by one. The Review filter helps you spot failed proposals and changes that need checking. A built-in example lets you practise with sample data. Replay is read-only. It uses the edits Codex recorded, so changes made by other tools may be missing. Requires a compatible Codex desktop app and Python 3.9 or later.",
         "developerName": "Feida Wang",
         "category": "Productivity",
         "defaultPrompt": [
-          "Replay the recorded file edits from my previous Codex turn.",
-          "Open Replay Theater in this thread.",
-          "Show me a synthetic example in Replay Theater."
+          "Which file edits did Codex record in this chat?",
+          "Open Replay Theater so I can review the changes one at a time.",
+          "Open the sample replay so I can practise reviewing an edit."
         ],
         "logo": "./assets/logo.png",
         "composerIcon": "./assets/icon.png",
-        "screenshots": [
-          "./assets/screenshot.png"
-        ],
         "websiteURL": "https://github.com/FeidaWang/Reply-Theatre",
         "supportURL": "https://github.com/FeidaWang/Reply-Theatre/blob/main/SUPPORT.md",
         "privacyPolicyURL": "https://github.com/FeidaWang/Reply-Theatre/blob/main/PRIVACY.md",
@@ -40,15 +37,15 @@
       },
       "publication": {
         "countries": [],
-        "release_notes": "Adds a bundled local MCP server and a Replay Theater entry in the Codex thread panel. Review recorded edits in chat or step through them in the English player, with file search and layouts for wide and narrow panels. Includes a sample replay."
+        "release_notes": "Clarifies how to review Codex file changes before handing off work. Adds a beginner guide in English and Simplified Chinese."
       },
       "requires_local_executor": true,
       "review": {
         "commerce": false,
         "prompts": [
-          "Replay the recorded file edits from my previous Codex turn.",
-          "Open Replay Theater in this thread.",
-          "Show me a synthetic example in Replay Theater."
+          "Which file edits did Codex record in this chat?",
+          "Open Replay Theater so I can review the changes one at a time.",
+          "Open the sample replay so I can practise reviewing an edit."
         ],
         "test_cases": {
           "positive": [

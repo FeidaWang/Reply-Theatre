@@ -59,7 +59,7 @@
     if (!ready) {
       ready = request('ui/initialize', {
         protocolVersion: '2026-01-26',
-        appInfo: {name: 'Replay Theater', version: '0.5.0'},
+        appInfo: {name: 'Replay Theater', version: '0.5.1'},
         appCapabilities: {},
       }, 8000).then(result => {
         theme(result?.hostContext);

@@ -30,7 +30,7 @@ The [privacy policy](PRIVACY.md) explains local storage, retention and the disti
 
 A replay is a view of saved evidence, not a guarantee of a complete or accurate reconstruction of every filesystem change. Shell, formatter, MCP and subagent edits can be absent. Native failed, declined or incomplete diffs can be proposals rather than applied changes. Supplied v2 records may contain observed changes with uncertain attribution or order. Missing earlier file content cannot be recovered from a partial diff alone.
 
-Review the displayed source, status and uncertainty labels before relying on a result. The software is not a backup service, authoritative audit log or substitute for checking the files and history available to you. Its current interface uses Simplified Chinese labels. Host capabilities and supported history interfaces can change.
+Review the displayed source, status and uncertainty labels before relying on a result. The software is not a backup service, authoritative audit log or substitute for checking the files and history available to you. The replay panel uses English labels. Host capabilities and supported history interfaces can change.
 
 ## Warranty, liability and statutory rights
 

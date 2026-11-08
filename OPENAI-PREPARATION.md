@@ -1,6 +1,6 @@
 # OpenAI desktop MCP preparation
 
-Replay Theater 0.5.0 follows the Token Weather desktop packaging pattern. The portable ZIP contains the plugin manifest, one local stdio MCP entry, the server and panel resources, the replay skill and a synthetic fixture. The plugin declares Desktop only. No remote endpoint or account binding is needed for the local server.
+Replay Theater Desktop 0.5.1 follows the Token Weather desktop packaging pattern. The portable ZIP contains the plugin manifest, one local stdio MCP entry, the server and panel resources, the replay skill and a synthetic fixture. The plugin declares Desktop only. No remote endpoint or account binding is needed for the local server.
 
 ## Validation
 
