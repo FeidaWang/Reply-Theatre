@@ -2,8 +2,6 @@
 
 [English](#english) · [简体中文](#简体中文)
 
-![The Replay Theater desktop panel showing what changed in greeting.py](assets/screenshot.png)
-
 ## English
 
 Codex is an AI assistant that can edit your project files. When it says a task is done, you may want to see what changed before you accept the work or pass it to a teammate. Replay Theater turns the edits Codex recorded into a numbered list you can go through one at a time.
